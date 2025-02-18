@@ -1,10 +1,12 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use flate2::write::GzEncoder;
 use flate2::read::GzDecoder;
+use flate2::write::GzEncoder;
 use flate2::Compression;
+use lz4::Decoder;
+use lz4::EncoderBuilder;
 use lz4_flex::{compress_prepend_size, decompress_size_prepended};
-use rand::{Rng, thread_rng};
-use std::io::{Write, Read};
+use rand::{thread_rng, Rng};
+use std::io::{Read, Write};
 
 const DATA_SIZES: [usize; 3] = [1024, 1024 * 1024, 1024 * 1024 * 10]; // 1KB, 1MB, 10MB
 
@@ -14,6 +16,7 @@ fn generate_binary_data(size: usize) -> Vec<u8> {
     data
 }
 
+// Gzip Compression & Decompression
 fn gzip_compression(data: &[u8], level: Compression) -> Vec<u8> {
     let mut encoder = GzEncoder::new(Vec::new(), level);
     encoder.write_all(data).unwrap();
@@ -27,6 +30,7 @@ fn gzip_decompression(data: &[u8]) -> Vec<u8> {
     decompressed
 }
 
+// LZ4-Flex Compression & Decompression
 fn lz4_flex_compression(data: &[u8]) -> Vec<u8> {
     compress_prepend_size(data)
 }
@@ -35,10 +39,10 @@ fn lz4_flex_decompression(data: &[u8]) -> Vec<u8> {
     decompress_size_prepended(data).unwrap()
 }
 
-// lz4 Compression & Decompression
-fn lz4_compression(data: &[u8]) -> Vec<u8> {
-    let mut encoder = lz4::EncoderBuilder::new()
-        .level(4) // Compression level (0-16)
+// LZ4 Compression & Decompression with Different Levels
+fn lz4_compression(data: &[u8], level: u32) -> Vec<u8> {
+    let mut encoder = EncoderBuilder::new()
+        .level(level) // Set LZ4 compression level (0-16)
         .build(Vec::new())
         .unwrap();
     encoder.write_all(data).unwrap();
@@ -48,7 +52,7 @@ fn lz4_compression(data: &[u8]) -> Vec<u8> {
 }
 
 fn lz4_decompression(data: &[u8]) -> Vec<u8> {
-    let mut decoder = lz4::Decoder::new(data).unwrap();
+    let mut decoder = Decoder::new(data).unwrap();
     let mut decompressed = Vec::new();
     decoder.read_to_end(&mut decompressed).unwrap();
     decompressed
@@ -81,18 +85,32 @@ fn benchmark_compression_speed(c: &mut Criterion) {
             })
         });
 
-        // LZ4-flex Compression Benchmark
-        group.bench_function("lz4-flex", |b| {
+        // LZ4-Flex Compression Benchmark
+        group.bench_function("lz4_flex", |b| {
             b.iter(|| {
                 let compressed = lz4_flex_compression(black_box(&data));
                 black_box(compressed);
             })
         });
 
-        // lz4 Compression Benchmark
-        group.bench_function("lz4", |b| {
+        // LZ4 Compression Benchmarks at Different Levels
+        group.bench_function("lz4_fast", |b| {
             b.iter(|| {
-                let compressed = lz4_compression(black_box(&data));
+                let compressed = lz4_compression(black_box(&data), 0); // Fastest mode
+                black_box(compressed);
+            })
+        });
+
+        group.bench_function("lz4_default", |b| {
+            b.iter(|| {
+                let compressed = lz4_compression(black_box(&data), 4); // Default mode
+                black_box(compressed);
+            })
+        });
+
+        group.bench_function("lz4_best", |b| {
+            b.iter(|| {
+                let compressed = lz4_compression(black_box(&data), 16); // Best compression
                 black_box(compressed);
             })
         });
@@ -106,25 +124,23 @@ fn benchmark_compression_speed(c: &mut Criterion) {
             })
         });
 
-        // LZ4-flex ecompression Benchmark
-        let lz4_compressed = lz4_flex_compression(&data);
-        group.bench_function("lz4_decompress", |b| {
+        // LZ4-Flex Decompression Benchmark
+        let lz4_flex_compressed = lz4_flex_compression(&data);
+        group.bench_function("lz4_flex_decompress", |b| {
             b.iter(|| {
-                let decompressed = lz4_flex_decompression(black_box(&lz4_compressed));
+                let decompressed = lz4_flex_decompression(black_box(&lz4_flex_compressed));
                 black_box(decompressed);
             })
         });
 
-        // lz4 Decompression Benchmark
-        let lz4_compressed = lz4_compression(&data);
+        // LZ4 Decompression Benchmark at Default Level
+        let lz4_compressed = lz4_compression(&data, 4);
         group.bench_function("lz4_decompress", |b| {
             b.iter(|| {
                 let decompressed = lz4_decompression(black_box(&lz4_compressed));
                 black_box(decompressed);
             })
         });
-    
-
 
         group.finish();
     }

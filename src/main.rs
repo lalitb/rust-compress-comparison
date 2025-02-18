@@ -2,7 +2,7 @@ use flate2::write::GzEncoder;
 use flate2::Compression;
 use lz4::EncoderBuilder;
 use lz4_flex::compress_prepend_size;
-use rand::{distributions::Alphanumeric, Rng, thread_rng};
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use std::io::Write;
 use std::time::Instant;
 
@@ -32,7 +32,7 @@ fn generate_test_data(data_type: &TestData) -> Vec<u8> {
             }
             data.truncate(DATA_SIZE);
             data
-        },
+        }
 
         TestData::Mixed => {
             let mut data = Vec::with_capacity(DATA_SIZE);
@@ -47,7 +47,7 @@ fn generate_test_data(data_type: &TestData) -> Vec<u8> {
             }
             data.truncate(DATA_SIZE);
             data
-        },
+        }
     }
 }
 
@@ -98,11 +98,7 @@ fn main() {
         ("Best", Compression::best()),
     ];
 
-    let lz4_rs_levels = [
-        ("Fast", 0),
-        ("Default", 4),
-        ("Best", 16),
-    ];
+    let lz4_rs_levels = [("Fast", 0), ("Default", 4), ("Best", 16)];
 
     let test_cases = [
         ("Random", TestData::Random),
@@ -110,8 +106,11 @@ fn main() {
         ("Mixed", TestData::Mixed),
     ];
 
-    println!("\nRunning compression benchmarks ({} trials of {}MB data)...\n",
-             NUM_TRIALS, DATA_SIZE / 1024 / 1024);
+    println!(
+        "\nRunning compression benchmarks ({} trials of {}MB data)...\n",
+        NUM_TRIALS,
+        DATA_SIZE / 1024 / 1024
+    );
 
     for (data_name, data_type) in &test_cases {
         println!("=== {} Data ===", data_name);
@@ -132,7 +131,8 @@ fn main() {
                 stats.size_sum += compressed_size;
             }
 
-            println!("\n--- Gzip {} ---\nCompression Factor: {:.2}x | Time: {:.3}s | Avg Size: {:.2}MB",
+            println!(
+                "\n--- Gzip {} ---\nCompression Factor: {:.2}x | Time: {:.3}s | Avg Size: {:.2}MB",
                 level_name,
                 stats.factor_sum / NUM_TRIALS as f64,
                 stats.time_sum / NUM_TRIALS as f64,
