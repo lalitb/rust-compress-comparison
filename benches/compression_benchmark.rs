@@ -133,11 +133,27 @@ fn benchmark_compression_speed(c: &mut Criterion) {
             })
         });
 
-        // LZ4 Decompression Benchmark at Default Level
-        let lz4_compressed = lz4_compression(&data, 4);
-        group.bench_function("lz4_decompress", |b| {
+        // LZ4 Decompression Benchmark at Different Levels
+        let lz4_compressed_fast = lz4_compression(&data, 0);
+        group.bench_function("lz4_decompress_fast", |b| {
             b.iter(|| {
-                let decompressed = lz4_decompression(black_box(&lz4_compressed));
+                let decompressed = lz4_decompression(black_box(&lz4_compressed_fast));
+                black_box(decompressed);
+            })
+        });
+
+        let lz4_compressed_default = lz4_compression(&data, 4);
+        group.bench_function("lz4_decompress_default", |b| {
+            b.iter(|| {
+                let decompressed = lz4_decompression(black_box(&lz4_compressed_default));
+                black_box(decompressed);
+            })
+        });
+
+        let lz4_compressed_best = lz4_compression(&data, 16);
+        group.bench_function("lz4_decompress_best", |b| {
+            b.iter(|| {
+                let decompressed = lz4_decompression(black_box(&lz4_compressed_best));
                 black_box(decompressed);
             })
         });
