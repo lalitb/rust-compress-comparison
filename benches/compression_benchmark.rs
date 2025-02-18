@@ -67,14 +67,14 @@ fn benchmark_compression_speed(c: &mut Criterion) {
             })
         });
 
-        group.bench_function("gzip_default", |b| {
+        group.bench_function("gzip_compress_default", |b| {
             b.iter(|| {
                 let compressed = gzip_compression(black_box(&data), Compression::default());
                 black_box(compressed);
             })
         });
 
-        group.bench_function("gzip_best", |b| {
+        group.bench_function("gzip_compress_best", |b| {
             b.iter(|| {
                 let compressed = gzip_compression(black_box(&data), Compression::best());
                 black_box(compressed);
@@ -82,7 +82,7 @@ fn benchmark_compression_speed(c: &mut Criterion) {
         });
 
         // LZ4-flex Compression Benchmark
-        group.bench_function("lz4-flex", |b| {
+        group.bench_function("lz4_flex_compress", |b| {
             b.iter(|| {
                 let compressed = lz4_flex_compression(black_box(&data));
                 black_box(compressed);
@@ -90,7 +90,7 @@ fn benchmark_compression_speed(c: &mut Criterion) {
         });
 
         // lz4 Compression Benchmark
-        group.bench_function("lz4", |b| {
+        group.bench_function("lz4_compress", |b| {
             b.iter(|| {
                 let compressed = lz4_compression(black_box(&data));
                 black_box(compressed);
@@ -108,7 +108,7 @@ fn benchmark_compression_speed(c: &mut Criterion) {
 
         // LZ4-flex ecompression Benchmark
         let lz4_compressed = lz4_flex_compression(&data);
-        group.bench_function("lz4_decompress", |b| {
+        group.bench_function("lz4_flex_decompress", |b| {
             b.iter(|| {
                 let decompressed = lz4_flex_decompression(black_box(&lz4_compressed));
                 black_box(decompressed);
